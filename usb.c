@@ -223,7 +223,7 @@ static int rtw_usb_parse(struct rtw89_dev *rtwdev,
 	struct usb_endpoint_descriptor *endpoint;
 	struct device *dev;
 	struct usb_device *usbd;
-	int i, j = 0, endpoints;
+	int i, endpoints;
 	u8 dir, xtype, num;
 	int ret = 0;
 
@@ -236,6 +236,7 @@ static int rtw_usb_parse(struct rtw89_dev *rtwdev,
 	interface_desc = &host_interface->desc;
 	endpoints = interface_desc->bNumEndpoints;
 
+	rtwusb->pipe_in = 0;
 	rtwusb->num_in_pipes = 0;
 	rtwusb->num_out_pipes = 0;
 	for (i = 0; i < endpoints; i++) {
@@ -286,7 +287,7 @@ static int rtw_usb_parse(struct rtw89_dev *rtwdev,
 		if (usb_endpoint_dir_out(endpoint) &&
 		    usb_endpoint_xfer_bulk(endpoint)) {
 			rtw89_info(rtwdev, "USB: out endpoint num %i\n", num);
-			if (j >= 4) {
+			if (rtwusb->num_out_pipes >= 8) {
 				rtw89_err(rtwdev,
 					"failed to get many OUT pipes\n");
 				ret = -EINVAL;
@@ -294,7 +295,7 @@ static int rtw_usb_parse(struct rtw89_dev *rtwdev,
 			}
 
 			/* for out enpoint, address == number */
-			rtwusb->out_ep[j++] = num;
+			rtwusb->out_ep[rtwusb->num_out_pipes] = num;
 			rtwusb->num_out_pipes++;
 		}
 	}
@@ -428,7 +429,16 @@ static int rtw_usb_probe(struct usb_interface *intf,
 		goto err_release_hw;
 	}
 
+	ret = rtw_usb_intf_init(rtwdev, intf);
+	if (ret) {
+		rtw89_err(rtwdev, "failed to init USB interface\n");
+		goto err_deinit_core;
+	}
+
 	return 0;
+
+err_deinit_core:
+	rtw89_core_deinit(rtwdev);
 
 err_release_hw:
 	ieee80211_free_hw(hw);
@@ -450,6 +460,7 @@ static void rtw_usb_disconnect(struct usb_interface *intf)
 	rtwdev = hw->priv;
 	rtwusb = rtw_get_usb_priv(rtwdev);
 
+	rtw_usb_intf_deinit(rtwdev, intf);
 	rtw89_core_deinit(rtwdev);
 	ieee80211_free_hw(hw);
 }

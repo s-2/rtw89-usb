@@ -95,7 +95,7 @@ struct rtw89_usb {
 	u8 num_out_pipes;
 	u8 pipe_interrupt;
 	u8 pipe_in;
-	u8 out_ep[4];
+	u8 out_ep[8];
 	u8 out_ep_queue_sel;
 	u8 queue_to_pipe[8];
 	u8 usb_speed;
