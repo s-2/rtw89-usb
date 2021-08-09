@@ -7,6 +7,7 @@ Driver for 802.11ax USB Adapter with chipset:
   RTL8852AU 
 
 This driver is based on Realtek's [rtw89 driver](https://github.com/torvalds/linux/tree/master/drivers/net/wireless/realtek/rtw89) in Linux main trunk.
+Or can refer to this lwfinger's github [rtw89] (https://github.com/lwfinger/rtw89)
 
 ## Build
 
