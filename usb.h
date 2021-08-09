@@ -53,7 +53,7 @@
 	.driver_info = (kernel_ulong_t)&(hw_config),
 
 /* defined functions */
-#define rtw_get_usb_priv(rtwdev) (struct rtw_usb *)((rtwdev)->priv)
+#define rtw_get_usb_priv(rtwdev) (struct rtw89_usb *)((rtwdev)->priv)
 
 enum rtw_usb_burst_size {
 	USB_BURST_SIZE_3_0 = 0x0,
@@ -77,16 +77,16 @@ struct rx_usb_ctrl_block {
 	u8 ep_num;
 };
 
-struct rtw_usb_work_data {
+struct rtw89_usb_work_data {
 	struct work_struct work;
 	struct rtw89_dev *rtwdev;
 };
 
-struct rtw_usb_tx_data {
+struct rtw89_usb_tx_data {
 	u8 sn;
 };
 
-struct rtw_usb {
+struct rtw89_usb {
 	struct rtw89_dev *rtwdev;
 	struct usb_device *udev;
 
@@ -104,20 +104,20 @@ struct rtw_usb {
 	atomic_t is_bus_drv_ready;
 
 	struct workqueue_struct *txwq;
-	struct rtw_usb_work_data *tx_handler_data;
+	struct rtw89_usb_work_data *tx_handler_data;
 
 	struct workqueue_struct *rxwq;
-	struct rtw_usb_work_data *rx_handler_data;
+	struct rtw89_usb_work_data *rx_handler_data;
 };
 
-static inline struct rtw_usb_tx_data *rtw_usb_get_tx_data(struct sk_buff *skb)
+static inline struct rtw89_usb_tx_data *rtw_usb_get_tx_data(struct sk_buff *skb)
 {
 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
 
-	BUILD_BUG_ON(sizeof(struct rtw_usb_tx_data) >
+	BUILD_BUG_ON(sizeof(struct rtw89_usb_tx_data) >
 		sizeof(info->status.status_driver_data));
 
-	return (struct rtw_usb_tx_data *)info->status.status_driver_data;
+	return (struct rtw89_usb_tx_data *)info->status.status_driver_data;
 }
 
 #endif

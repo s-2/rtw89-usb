@@ -13,12 +13,12 @@
 #define RTW_USB_MSG_TIMEOUT	30000 /* (ms) */
 #define RTW_USB_MAX_RXQ_LEN	128
 
-struct rtw_usb_txcb_t {
+struct rtw89_usb_txcb_t {
 	struct rtw89_dev *rtwdev;
 	struct sk_buff_head tx_ack_queue;
 };
 
-struct rtw_usb_ctrlcb_t {
+struct rtw89_usb_ctrlcb_t {
 	atomic_t done;
 	__u8 req_type;
 	int status;
@@ -30,12 +30,12 @@ struct rtw_usb_ctrlcb_t {
 
 static void rtw_usb_ctrl_atomic_cb(struct urb *urb)
 {
-	struct rtw_usb_ctrlcb_t *ctx;
+	struct rtw89_usb_ctrlcb_t *ctx;
 
 	if (unlikely(!urb))
 		return;
 
-	ctx = (struct rtw_usb_ctrlcb_t *)urb->context;
+	ctx = (struct rtw89_usb_ctrlcb_t *)urb->context;
 	if (likely(ctx)) {
 		atomic_set(&ctx->done, 1);
 		ctx->status = urb->status;
@@ -51,7 +51,7 @@ static int rtw_usb_ctrl_atomic(struct rtw89_dev *rtwdev,
 			       void *databuf, __u16 size)
 {
 	struct usb_ctrlrequest *dr = NULL;
-	struct rtw_usb_ctrlcb_t *ctx = NULL;
+	struct rtw89_usb_ctrlcb_t *ctx = NULL;
 	struct urb *urb = NULL;
 	bool done;
 	int ret = -ENOMEM;
@@ -112,7 +112,7 @@ out:
 
 static u8 rtw_usb_read8_atomic(struct rtw89_dev *rtwdev, u32 addr)
 {
-	struct rtw_usb *rtwusb = (struct rtw_usb *)rtwdev->priv;
+	struct rtw89_usb *rtwusb = (struct rtw89_usb *)rtwdev->priv;
 	struct usb_device *udev = rtwusb->udev;
 	u8 *buf = NULL, data;
 
@@ -130,7 +130,7 @@ static u8 rtw_usb_read8_atomic(struct rtw89_dev *rtwdev, u32 addr)
 
 static u16 rtw_usb_read16_atomic(struct rtw89_dev *rtwdev, u32 addr)
 {
-	struct rtw_usb *rtwusb = (struct rtw_usb *)rtwdev->priv;
+	struct rtw89_usb *rtwusb = (struct rtw89_usb *)rtwdev->priv;
 	struct usb_device *udev = rtwusb->udev;
 	__le16 *buf = NULL;
 	u16 data;
@@ -149,7 +149,7 @@ static u16 rtw_usb_read16_atomic(struct rtw89_dev *rtwdev, u32 addr)
 
 static u32 rtw_usb_read32_atomic(struct rtw89_dev *rtwdev, u32 addr)
 {
-	struct rtw_usb *rtwusb = (struct rtw_usb *)rtwdev->priv;
+	struct rtw89_usb *rtwusb = (struct rtw89_usb *)rtwdev->priv;
 	struct usb_device *udev = rtwusb->udev;
 	__le32 *buf;
 	u32 data;
@@ -168,7 +168,7 @@ static u32 rtw_usb_read32_atomic(struct rtw89_dev *rtwdev, u32 addr)
 
 static void rtw_usb_write8_atomic(struct rtw89_dev *rtwdev, u32 addr, u8 val)
 {
-	struct rtw_usb *rtwusb = (struct rtw_usb *)rtwdev->priv;
+	struct rtw89_usb *rtwusb = (struct rtw89_usb *)rtwdev->priv;
 	struct usb_device *udev = rtwusb->udev;
 	u8 *buf;
 
@@ -184,7 +184,7 @@ static void rtw_usb_write8_atomic(struct rtw89_dev *rtwdev, u32 addr, u8 val)
 
 static void rtw_usb_write16_atomic(struct rtw89_dev *rtwdev, u32 addr, u16 val)
 {
-	struct rtw_usb *rtwusb = (struct rtw_usb *)rtwdev->priv;
+	struct rtw89_usb *rtwusb = (struct rtw89_usb *)rtwdev->priv;
 	struct usb_device *udev = rtwusb->udev;
 	__le16 *buf;
 
@@ -200,7 +200,7 @@ static void rtw_usb_write16_atomic(struct rtw89_dev *rtwdev, u32 addr, u16 val)
 
 static void rtw_usb_write32_atomic(struct rtw89_dev *rtwdev, u32 addr, u32 val)
 {
-	struct rtw_usb *rtwusb = (struct rtw_usb *)rtwdev->priv;
+	struct rtw89_usb *rtwusb = (struct rtw89_usb *)rtwdev->priv;
 	struct usb_device *udev = rtwusb->udev;
 	__le32 *buf;
 
@@ -217,7 +217,7 @@ static void rtw_usb_write32_atomic(struct rtw89_dev *rtwdev, u32 addr, u32 val)
 static int rtw_usb_parse(struct rtw89_dev *rtwdev,
 			 struct usb_interface *interface)
 {
-	struct rtw_usb *rtwusb;
+	struct rtw89_usb *rtwusb;
 	struct usb_interface_descriptor *interface_desc;
 	struct usb_host_interface *host_interface;
 	struct usb_endpoint_descriptor *endpoint;
@@ -331,7 +331,7 @@ exit:
 static
 bool rtw_usb_is_bus_ready(struct rtw89_dev *rtwdev)
 {
-	struct rtw_usb *rtwusb = rtw_get_usb_priv(rtwdev);
+	struct rtw89_usb *rtwusb = rtw_get_usb_priv(rtwdev);
 
 	return (atomic_read(&rtwusb->is_bus_drv_ready) == true);
 }
@@ -339,14 +339,23 @@ bool rtw_usb_is_bus_ready(struct rtw89_dev *rtwdev)
 static
 void rtw_usb_set_bus_ready(struct rtw89_dev *rtwdev, bool ready)
 {
-	struct rtw_usb *rtwusb = rtw_get_usb_priv(rtwdev);
+	struct rtw89_usb *rtwusb = rtw_get_usb_priv(rtwdev);
 
 	atomic_set(&rtwusb->is_bus_drv_ready, ready);
 }
 
+static struct rtw89_hci_ops rtw89_usb_ops = {
+	.read8 = rtw_usb_read8_atomic,
+	.read16 = rtw_usb_read16_atomic,
+	.read32 = rtw_usb_read32_atomic,
+	.write8 = rtw_usb_write8_atomic,
+	.write16 = rtw_usb_write16_atomic,
+	.write32 = rtw_usb_write32_atomic,
+};
+
 static void rtw_usb_interface_configure(struct rtw89_dev *rtwdev)
 {
-	struct rtw_usb *rtwusb = rtw_get_usb_priv(rtwdev);
+	struct rtw89_usb *rtwusb = rtw_get_usb_priv(rtwdev);
 
 	if (RTW_USB_IS_SUPER_SPEED(rtwusb))
 		rtwusb->bulkout_size = RTW_USB_SUPER_SPEED_BULK_SIZE;
@@ -360,7 +369,7 @@ static void rtw_usb_interface_configure(struct rtw89_dev *rtwdev)
 static int rtw_usb_intf_init(struct rtw89_dev *rtwdev,
 			     struct usb_interface *intf)
 {
-	struct rtw_usb *rtwusb = rtw_get_usb_priv(rtwdev);
+	struct rtw89_usb *rtwusb = rtw_get_usb_priv(rtwdev);
 	struct usb_device *udev = usb_get_dev(interface_to_usbdev(intf));
 	int ret;
 
@@ -383,7 +392,7 @@ static int rtw_usb_intf_init(struct rtw89_dev *rtwdev,
 static void rtw_usb_intf_deinit(struct rtw89_dev *rtwdev,
 				struct usb_interface *intf)
 {
-	struct rtw_usb *rtwusb = rtw_get_usb_priv(rtwdev);
+	struct rtw89_usb *rtwusb = rtw_get_usb_priv(rtwdev);
 
 	usb_put_dev(rtwusb->udev);
 	usb_set_intfdata(intf, NULL);
@@ -393,27 +402,55 @@ static int rtw_usb_probe(struct usb_interface *intf,
 			 const struct usb_device_id *id)
 {
 	struct ieee80211_hw *hw;
+	struct rtw89_dev *rtwdev;
 	int drv_data_size;
+	int ret;
 
 	pr_info("%s enter\n", __func__);
 
-	drv_data_size = sizeof(struct rtw89_dev) + sizeof(struct rtw_usb);
+	drv_data_size = sizeof(struct rtw89_dev) + sizeof(struct rtw89_usb);
 	hw = ieee80211_alloc_hw(drv_data_size, &rtw89_ops);
-	if (!hw)
+	if (!hw) {
+		dev_err(&intf->dev, "failed to allocate hw\n");
 		return -ENOMEM;
+	}
+
+	rtwdev = hw->priv;
+	rtwdev->hw = hw;
+	rtwdev->dev = &intf->dev;
+	rtwdev->chip = (const struct rtw89_chip_info *)id->driver_info;
+	rtwdev->hci.ops = &rtw89_usb_ops;
+	rtwdev->hci.type = RTW89_HCI_TYPE_USB;
+
+	ret = rtw89_core_init(rtwdev);
+	if (ret) {
+		rtw89_err(rtwdev, "failed to initialise core\n");
+		goto err_release_hw;
+	}
 
 	return 0;
+
+err_release_hw:
+	ieee80211_free_hw(hw);
+
+	return ret;
 }
 
 static void rtw_usb_disconnect(struct usb_interface *intf)
 {
 	struct ieee80211_hw *hw = usb_get_intfdata(intf);
+	struct rtw89_dev *rtwdev;
+	struct rtw89_usb *rtwusb;
 
 	pr_info("%s\n", __func__);
 
 	if (!hw)
 		return;
 
+	rtwdev = hw->priv;
+	rtwusb = rtw_get_usb_priv(rtwdev);
+
+	rtw89_core_deinit(rtwdev);
 	ieee80211_free_hw(hw);
 }
 
