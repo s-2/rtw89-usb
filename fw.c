@@ -490,6 +490,8 @@ int rtw89_load_firmware(struct rtw89_dev *rtwdev)
 	fw->rtwdev = rtwdev;
 	init_completion(&fw->completion);
 
+	pr_info("%s fw_name:%s\n", __func__, fw_name);
+
 	ret = request_firmware_nowait(THIS_MODULE, true, fw_name, rtwdev->dev,
 				      GFP_KERNEL, fw, rtw89_load_firmware_cb);
 	if (ret) {

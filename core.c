@@ -2177,14 +2177,12 @@ int rtw89_core_init(struct rtw89_dev *rtwdev)
 	INIT_WORK(&btc->dhcp_notify_work, rtw89_btc_ntfy_dhcp_packet_work);
 	INIT_WORK(&btc->wl_sta_notify_work, rtw89_btc_ntfy_wl_sta_work);
 
-#if 0 //NEO
 	ret = rtw89_load_firmware(rtwdev);
 	if (ret) {
 		rtw89_warn(rtwdev, "no firmware loaded\n");
 		return ret;
 	}
 	rtw89_ser_init(rtwdev);
-#endif //NEO
 	return 0;
 }
 EXPORT_SYMBOL(rtw89_core_init);
