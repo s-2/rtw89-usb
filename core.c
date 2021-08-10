@@ -2259,11 +2259,11 @@ int rtw89_chip_info_setup(struct rtw89_dev *rtwdev)
 		return ret;
 	}
 
-#if 0 //NEO
 	ret = rtw89_chip_efuse_info_setup(rtwdev);
 	if (ret)
 		return ret;
 
+#if 0 //NEO
 	ret = rtw89_chip_board_info_setup(rtwdev);
 	if (ret)
 		return ret;

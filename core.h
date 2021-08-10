@@ -1959,8 +1959,8 @@ struct rtw89_hci_ops {
 struct rtw89_hci_info {
 	const struct rtw89_hci_ops *ops;
 	enum rtw89_hci_type type;
-	u32 rpwm_addr;
-	u32 cpwm_addr;
+	//u32 rpwm_addr;
+	//u32 cpwm_addr;
 };
 
 struct rtw89_chip_ops {
@@ -2178,6 +2178,7 @@ struct rtw89_chip_info {
 	u32 dle_lamode_size;
 	u16 max_amsdu_limit;
 	struct rtw89_hfc_param_ini *hfc_param_ini;
+	struct rtw89_hfc_param_ini *hfc_param_ini_usb;
 	struct rtw89_dle_mem *dle_mem;
 	u32 rf_base_addr[2];
 	u8 rf_path_num;

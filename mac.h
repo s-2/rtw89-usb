@@ -715,6 +715,8 @@ extern struct rtw89_ple_quota ple_qt22;
 extern struct rtw89_ple_quota ple_qt23;
 extern struct rtw89_ple_quota ple_qt24;
 
+extern struct rtw89_hfc_prec_cfg rtw_hfc_preccfg_usb;
+
 static inline u32 rtw89_mac_reg_by_idx(u32 reg_base, u8 band)
 {
 	return band == 0 ? reg_base : (reg_base + 0x2000);

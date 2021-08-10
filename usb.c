@@ -7,6 +7,7 @@
 #include <linux/mutex.h>
 #include "debug.h"
 #include "fw.h"
+#include "reg.h"
 #include "usb.h"
 
 #define RTW_USB_CONTROL_MSG_TIMEOUT	30000 /* (us) */
@@ -366,14 +367,52 @@ static void rtw_usb_rx_queue_purge(struct rtw89_usb *rtwusb)
 	skb_queue_purge(&rtwusb->rx_queue);
 }
 
+static int rtw89_usb_tx_write(struct rtw89_dev *rtwdev, struct rtw89_core_tx_request *tx_req,
+			      u8 txch)
+{
+	pr_info("%s NEO TODO\n", __func__);
+	return 0;
+}
+
 static int rtw89_usb_ops_mac_pre_init(struct rtw89_dev *rtwdev)
 {
-	pr_info("%s enter\n", __func__);
+	/* G6: usb_pre_init_8852a */
+	u32 val;
+
+	rtw89_write32_set(rtwdev, R_AX_PLATFORM_ENABLE, B_AX_R_USBIO_MODE);
+
+	rtw89_write32_clr(rtwdev, R_AX_HCI_FUNC_EN, B_AX_HCI_RXDMA_EN | B_AX_HCI_TXDMA_EN);
+	rtw89_write32_set(rtwdev, R_AX_HCI_FUNC_EN, B_AX_HCI_RXDMA_EN | B_AX_HCI_TXDMA_EN);
+
+	val = rtw89_read32(rtwdev, R_AX_USB_ENDPOINT_3);
+	pr_info("%s USB endpoint : TODO : 0x%x\n", __func__, val);
 
 	return 0;
 }
 
+static int rtw89_usb_ops_tx_write(struct rtw89_dev *rtwdev, struct rtw89_core_tx_request *tx_req)
+{
+	struct rtw89_tx_desc_info *desc_info = &tx_req->desc_info;
+	int ret;
+
+	ret = rtw89_usb_tx_write(rtwdev, tx_req, desc_info->ch_dma);
+	if (ret) {
+		rtw89_err(rtwdev, "failed to TX Queue %d\n", desc_info->ch_dma);
+		return ret;
+	}
+
+	return 0;
+}
+
+static void rtw89_usb_ops_tx_kick_off(struct rtw89_dev *rtwdev, u8 txch)
+{
+	pr_info("%s NEO TODO\n", __func__);
+}
+
 static struct rtw89_hci_ops rtw89_usb_ops = {
+	.tx_write = rtw89_usb_ops_tx_write,
+	.tx_kick_off = rtw89_usb_ops_tx_kick_off,
+
 	.read8 = rtw_usb_read8_atomic,
 	.read16 = rtw_usb_read16_atomic,
 	.read32 = rtw_usb_read32_atomic,

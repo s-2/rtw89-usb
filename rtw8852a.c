@@ -143,6 +143,88 @@ static struct rtw89_dle_mem rtw8852a_dle_mem_pcie[] = {
 			       NULL},
 };
 
+/* for USB */
+static struct rtw89_hfc_ch_cfg rtw8852a_hfc_chcfg_usb_scc[] = {
+	{22, 402, grp_0}, /* ACH 0 */
+	{0, 0, grp_0}, /* ACH 1 */
+	{22, 402, grp_0}, /* ACH 2 */
+	{0, 0, grp_0}, /* ACH 3 */
+	{22, 402, grp_0}, /* ACH 4 */
+	{0, 0, grp_0}, /* ACH 5 */
+	{22, 402, grp_0}, /* ACH 6 */
+	{0, 0, grp_0}, /* ACH 7 */
+	{22, 402, grp_0}, /* B0MGQ */
+	{0, 0, grp_0}, /* B0HIQ */
+	{22, 402, grp_0}, /* B1MGQ */
+	{0, 0, grp_0}, /* B1HIQ */
+	{0, 0, 0} /* FWCMDQ */
+};
+
+static struct rtw89_hfc_ch_cfg rtw8852a_hfc_chcfg_usb_dbcc[] = {
+	{22, 212, grp_0}, /* ACH 0 */
+	{0, 0, grp_0}, /* ACH 1 */
+	{22, 212, grp_0}, /* ACH 2 */
+	{0, 0, grp_0}, /* ACH 3 */
+	{22, 212, grp_1}, /* ACH 4 */
+	{0, 0, grp_1}, /* ACH 5 */
+	{22, 212, grp_1}, /* ACH 6 */
+	{0, 0, grp_1}, /* ACH 7 */
+	{22, 212, grp_0}, /* B0MGQ */
+	{0, 0, grp_0}, /* B0HIQ */
+	{22, 212, grp_1}, /* B1MGQ */
+	{0, 0, grp_1}, /* B1HIQ */
+	{0, 0, 0} /* FWCMDQ */
+};
+
+static struct rtw89_hfc_ch_cfg rtw8852a_hfc_chcfg_usb_la[] = {
+	{22, 84, grp_0}, /* ACH 0 */
+	{0, 0, grp_0}, /* ACH 1 */
+	{22, 84, grp_0}, /* ACH 2 */
+	{0, 0, grp_0}, /* ACH 3 */
+	{22, 84, grp_1}, /* ACH 4 */
+	{0, 0, grp_1}, /* ACH 5 */
+	{22, 84, grp_1}, /* ACH 6 */
+	{0, 0, grp_1}, /* ACH 7 */
+	{22, 84, grp_0}, /* B0MGQ */
+	{0, 0, grp_0}, /* B0HIQ */
+	{22, 84, grp_1}, /* B1MGQ */
+	{0, 0, grp_1}, /* B1HIQ */
+	{0, 0, 0} /* FWCMDQ */
+};
+
+static struct rtw89_hfc_pub_cfg rtw8852a_hfc_pubcfg_usb_scc = {
+	512, /* Group 0 */
+	0, /* Group 1 */
+	512, /* Public Max */
+	104 /* WP threshold */
+};
+
+static struct rtw89_hfc_pub_cfg rtw8852a_hfc_pubcfg_usb_dbcc = {
+	256, /* Group 0 */
+	256, /* Group 1 */
+	512, /* Public Max */
+	104 /* WP threshold */
+};
+
+static struct rtw89_hfc_pub_cfg rtw8852a_hfc_pubcfg_usb_la = {
+	128, /* Group 0 */
+	128, /* Group 1 */
+	256, /* Public Max */
+	104 /* WP threshold */
+};
+
+static struct rtw89_hfc_param_ini rtw8852a_hfc_param_ini_usb[] = {
+	[RTW89_QTA_SCC] = {rtw8852a_hfc_chcfg_usb_scc, &rtw8852a_hfc_pubcfg_usb_scc,
+			   &rtw_hfc_preccfg_usb, RTW89_HCIFC_STF},
+	[RTW89_QTA_DBCC] = {rtw8852a_hfc_chcfg_usb_dbcc, &rtw8852a_hfc_pubcfg_usb_dbcc,
+			    &rtw_hfc_preccfg_usb, RTW89_HCIFC_STF},
+	[RTW89_QTA_DLFW] = {NULL, NULL, &rtw_hfc_preccfg_usb, RTW89_HCIFC_STF},
+	[RTW89_QTA_LAMODE] = {rtw8852a_hfc_chcfg_usb_la,
+			      &rtw8852a_hfc_pubcfg_usb_la,
+			      &rtw_hfc_preccfg_usb, RTW89_HCIFC_STF},
+	[RTW89_QTA_INVALID] = {NULL},
+};
+
 static const struct rtw89_reg2_def  rtw8852a_pmac_ht20_mcs7_tbl[] = {
 	{0x44AC, 0x00000000},
 	{0x44B0, 0x00000000},
@@ -474,6 +556,17 @@ static void rtw8852ae_efuse_parsing(struct rtw89_efuse *efuse,
 	efuse->xtal_cap = map->xtal_k;
 }
 
+static void rtw8852au_efuse_parsing(struct rtw89_efuse *efuse,
+				    struct rtw8852a_efuse *map)
+{
+	ether_addr_copy(efuse->addr, map->u.mac_addr);
+	efuse->rfe_type = map->rfe_type;
+	efuse->xtal_cap = map->xtal_k;
+
+	print_hex_dump(KERN_INFO, "mac addr: ", DUMP_PREFIX_OFFSET, 16, 1,
+		       efuse->addr, ETH_ALEN, false);
+}
+
 static void rtw8852a_efuse_parsing_tssi(struct rtw89_dev *rtwdev,
 					struct rtw8852a_efuse *map)
 {
@@ -519,6 +612,9 @@ static int rtw8852a_read_efuse(struct rtw89_dev *rtwdev, u8 *log_map)
 	switch (rtwdev->hci.type) {
 	case RTW89_HCI_TYPE_PCIE:
 		rtw8852ae_efuse_parsing(efuse, map);
+		break;
+	case RTW89_HCI_TYPE_USB:
+		rtw8852au_efuse_parsing(efuse, map);
 		break;
 	default:
 		return -ENOTSUPP;
@@ -2034,6 +2130,7 @@ const struct rtw89_chip_info rtw8852a_chip_info = {
 	.dle_lamode_size	= 262144,
 	.max_amsdu_limit	= 3500,
 	.hfc_param_ini		= rtw8852a_hfc_param_ini_pcie,
+	.hfc_param_ini_usb	= rtw8852a_hfc_param_ini_usb,
 	.dle_mem		= rtw8852a_dle_mem_pcie,
 	.rf_base_addr		= {0xc000, 0xd000},
 	.pwr_on_seq		= pwr_on_seq_8852a,

@@ -493,8 +493,14 @@ struct rtw89_hfc_prec_cfg rtw_hfc_preccfg_pcie_stf = {
 	1, 40, 64, 64, 1, 0, 1, 1
 };
 
+struct rtw89_hfc_prec_cfg rtw_hfc_preccfg_usb = {
+	11, 32, 76, 25, 1, 1, 1, 1 
+};
+
 static int hfc_reset_param(struct rtw89_dev *rtwdev)
 {
+	/* G6: hci_fc.c::hfc_reset_param */
+
 	struct rtw89_hfc_param *param = &rtwdev->mac.hfc_param;
 	struct rtw89_hfc_param_ini param_ini = {NULL};
 	u8 qta_mode = rtwdev->mac.dle_info.qta_mode;
@@ -502,6 +508,10 @@ static int hfc_reset_param(struct rtw89_dev *rtwdev)
 	switch (rtwdev->hci.type) {
 	case RTW89_HCI_TYPE_PCIE:
 		param_ini = rtwdev->chip->hfc_param_ini[qta_mode];
+		param->en = 0;
+		break;
+	case RTW89_HCI_TYPE_USB:
+		param_ini = rtwdev->chip->hfc_param_ini_usb[qta_mode];
 		param->en = 0;
 		break;
 	default:
@@ -935,6 +945,8 @@ static void rtw89_mac_send_rpwm(struct rtw89_dev *rtwdev,
 {
 	u16 request;
 
+	pr_info("%s TODO NEO\n", __func__);
+#if 0 //NEO
 	request = rtw89_read16(rtwdev, R_AX_RPWM);
 	request ^= request | PS_RPWM_TOGGLE;
 
@@ -948,6 +960,7 @@ static void rtw89_mac_send_rpwm(struct rtw89_dev *rtwdev,
 		request |= PS_RPWM_ACK;
 
 	rtw89_write16(rtwdev, rtwdev->hci.rpwm_addr, request);
+#endif //NEO
 }
 
 static int rtw89_mac_check_cpwm_state(struct rtw89_dev *rtwdev,
@@ -1029,10 +1042,8 @@ static int rtw89_mac_power_switch(struct rtw89_dev *rtwdev, bool on)
 	else
 		cfg_seq = chip->pwr_off_seq;
 
-#if 0 //NEO
 	if (test_bit(RTW89_FLAG_FW_RDY, rtwdev->flags))
 		rtw89_leave_ps_mode(rtwdev);
-#endif //NEO
 
 	val = rtw89_read8(rtwdev, 0x3F1) & 0x3;
 	if (on && val == PWR_ACT) {
@@ -2790,6 +2801,7 @@ void rtw89_mac_disable_bb_rf(struct rtw89_dev *rtwdev)
 	rtw89_write8_clr(rtwdev, R_AX_PHYREG_SET, PHYREG_SET_ALL_CYCLE);
 }
 
+/* G6: mac_hal_fast_init */
 int rtw89_mac_partial_init(struct rtw89_dev *rtwdev)
 {
 	int ret;
