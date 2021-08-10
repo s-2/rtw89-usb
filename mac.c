@@ -1029,8 +1029,10 @@ static int rtw89_mac_power_switch(struct rtw89_dev *rtwdev, bool on)
 	else
 		cfg_seq = chip->pwr_off_seq;
 
+#if 0 //NEO
 	if (test_bit(RTW89_FLAG_FW_RDY, rtwdev->flags))
 		rtw89_leave_ps_mode(rtwdev);
+#endif //NEO
 
 	val = rtw89_read8(rtwdev, 0x3F1) & 0x3;
 	if (on && val == PWR_ACT) {

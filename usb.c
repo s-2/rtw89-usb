@@ -366,6 +366,13 @@ static void rtw_usb_rx_queue_purge(struct rtw89_usb *rtwusb)
 	skb_queue_purge(&rtwusb->rx_queue);
 }
 
+static int rtw89_usb_ops_mac_pre_init(struct rtw89_dev *rtwdev)
+{
+	pr_info("%s enter\n", __func__);
+
+	return 0;
+}
+
 static struct rtw89_hci_ops rtw89_usb_ops = {
 	.read8 = rtw_usb_read8_atomic,
 	.read16 = rtw_usb_read16_atomic,
@@ -373,8 +380,9 @@ static struct rtw89_hci_ops rtw89_usb_ops = {
 	.write8 = rtw_usb_write8_atomic,
 	.write16 = rtw_usb_write16_atomic,
 	.write32 = rtw_usb_write32_atomic,
-};
 
+	.mac_pre_init = rtw89_usb_ops_mac_pre_init,
+};
 
 static void rtw_usb_rx_handler(struct work_struct *work)
 {
@@ -576,8 +584,6 @@ static int rtw_usb_probe(struct usb_interface *intf,
 	int drv_data_size;
 	int ret;
 
-	pr_info("%s enter\n", __func__);
-
 	drv_data_size = sizeof(struct rtw89_dev) + sizeof(struct rtw89_usb);
 	hw = ieee80211_alloc_hw(drv_data_size, &rtw89_ops);
 	if (!hw) {
@@ -616,7 +622,16 @@ static int rtw_usb_probe(struct usb_interface *intf,
 		goto err_destroy_txwq;
 	}
 
+	ret = rtw89_chip_info_setup(rtwdev);
+	if (ret) {
+		rtw89_err(rtwdev, "failed to setup chip information\n");
+		goto err_destroy_rxwq;
+	}
+
 	return 0;
+
+err_destroy_rxwq:
+	rtw_usb_deinit_rx(rtwdev);
 
 err_destroy_txwq:
 	rtw_usb_deinit_tx(rtwdev);
@@ -639,15 +654,14 @@ static void rtw_usb_disconnect(struct usb_interface *intf)
 	struct rtw89_dev *rtwdev;
 	struct rtw89_usb *rtwusb;
 
-	pr_info("%s\n", __func__);
-
 	if (!hw)
 		return;
 
 	rtwdev = hw->priv;
 	rtwusb = rtw_get_usb_priv(rtwdev);
-	rtw_usb_deinit_tx(rtwdev);
+
 	rtw_usb_deinit_rx(rtwdev);
+	rtw_usb_deinit_tx(rtwdev);
 
 	if (rtwusb->udev->state != USB_STATE_NOTATTACHED)
 		usb_reset_device(rtwusb->udev);
