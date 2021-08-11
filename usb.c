@@ -337,7 +337,7 @@ static unsigned int rtw_usb_get_pipe(struct rtw89_dev *rtwdev, u8 addr, bool is_
 	if (!is_bulkout) {
 		pipe = usb_rcvbulkpipe(usbd, rtwusb->pipe_in);
 	} else if (addr < RTW89_BULKOUT_NUM) {
-		pipe = usb_sndbulkpipe(usbd, addr);
+		pipe = usb_sndbulkpipe(usbd, rtwusb->out_ep[addr]);
 	} else {
 		rtw89_err(rtwdev, "failed to get pipe, addr error: %d\n", addr);
 	}
