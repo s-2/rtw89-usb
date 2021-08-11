@@ -1959,7 +1959,7 @@ struct rtw89_hci_ops {
 struct rtw89_hci_info {
 	const struct rtw89_hci_ops *ops;
 	enum rtw89_hci_type type;
-	//u32 rpwm_addr;
+	u32 rpwm_addr;
 	//u32 cpwm_addr;
 };
 

@@ -958,8 +958,6 @@ static void rtw89_mac_send_rpwm(struct rtw89_dev *rtwdev,
 {
 	u16 request;
 
-	pr_info("%s TODO NEO\n", __func__);
-#if 0 //NEO
 	request = rtw89_read16(rtwdev, R_AX_RPWM);
 	request ^= request | PS_RPWM_TOGGLE;
 
@@ -973,7 +971,6 @@ static void rtw89_mac_send_rpwm(struct rtw89_dev *rtwdev,
 		request |= PS_RPWM_ACK;
 
 	rtw89_write16(rtwdev, rtwdev->hci.rpwm_addr, request);
-#endif //NEO
 }
 
 static int rtw89_mac_check_cpwm_state(struct rtw89_dev *rtwdev,

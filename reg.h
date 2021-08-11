@@ -136,6 +136,9 @@
 #define R_AX_UDM2 0x01F8
 #define R_AX_UDM3 0x01FC
 
+#define R_AX_USB_D2F_F2D_INFO 0x1200
+
+
 #define R_AX_XTAL_ON_CTRL0 0x0280
 #define B_AX_XTAL_SC_LPS BIT(31)
 #define B_AX_XTAL_SC_XO_MSK GENMASK(23, 17)
