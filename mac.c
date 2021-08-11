@@ -1233,9 +1233,19 @@ struct rtw89_dle_size wde_size10 = {
 	RTW89_WDE_PG_64, 1408, 0,
 };
 
+/* LA-USB */
+struct rtw89_dle_size wde_size15 = {
+	RTW89_WDE_PG_64, 384, 0,
+};
+
 /* PCIE */
 struct rtw89_dle_size ple_size0 = {
 	RTW89_PLE_PG_128, 1520, 16,
+};
+
+/* SDIO, USB */
+struct rtw89_dle_size ple_size1 = {
+	RTW89_PLE_PG_128, 3184, 16,
 };
 
 /* PCIE STF */
@@ -1281,6 +1291,11 @@ struct rtw89_dle_size ple_size9 = {
 /* LA-PCIE */
 struct rtw89_dle_size ple_size10 = {
 	RTW89_PLE_PG_128, 832, 0,
+};
+
+/* LA-USB */
+struct rtw89_dle_size ple_size15 = {
+	RTW89_PLE_PG_128, 1328, 16,
 };
 
 /* PCIE 64 */
@@ -1331,6 +1346,11 @@ struct rtw89_wde_quota wde_qt8 = {
 /* LA-PCIE */
 struct rtw89_wde_quota wde_qt9 = {
 	1392, 8, 0, 8,
+};
+
+/* LA-USB */
+struct rtw89_wde_quota wde_qt14 = {
+	256, 118, 0, 10,
 };
 
 /* PCIE DBCC */
@@ -1395,7 +1415,12 @@ struct rtw89_ple_quota ple_qt15 = {
 
 /* USB DBCC */
 struct rtw89_ple_quota ple_qt16 = {
-	2048, 0, 16, 48, 26, 26, 360, 90, 32, 40, 1,
+	2048, 0, 16, 48, 26, 13, 360, 94, 32, 40, 8,
+};
+
+/* USB DBCC */
+struct rtw89_ple_quota ple_qt17 = {
+	2048, 0, 515, 48, 64, 13, 859, 593, 64, 128, 240,
 };
 
 /* PCIE 64 */
@@ -1433,13 +1458,44 @@ struct rtw89_ple_quota ple_qt24 = {
 	187, 70, 47, 20, 64, 57, 387, 120, 64, 128, 1,
 };
 
+/* USB SCC */
+struct rtw89_ple_quota ple_qt25 = {
+	1536, 0, 16, 48, 13, 13, 360, 0, 32, 40, 8,
+};
+
+/* USB SCC */
+struct rtw89_ple_quota ple_qt26 = {
+	2654, 0, 1134, 48, 64, 13, 1478, 0, 64, 128, 128,
+};
+
+/* LA USB */
+struct rtw89_ple_quota ple_qt38 = {
+	512, 0, 16, 60, 26, 13, 360, 94, 32, 40, 8,
+};
+
+/* LA USB */
+struct rtw89_ple_quota ple_qt39 = {
+	512, 0, 184, 60, 64, 13, 527, 261, 64, 128, 175,
+};
+
 static struct rtw89_dle_mem *get_dle_mem_cfg(struct rtw89_dev *rtwdev,
 					     enum rtw89_qta_mode mode)
 {
 	struct rtw89_mac_info *mac = &rtwdev->mac;
 	struct rtw89_dle_mem *cfg;
 
-	cfg = &rtwdev->chip->dle_mem[mode];
+	switch (rtwdev->hci.type) {
+	case RTW89_HCI_TYPE_PCIE:
+		cfg = &rtwdev->chip->dle_mem[mode];
+		break;
+	case RTW89_HCI_TYPE_USB:
+		cfg = &rtwdev->chip->dle_mem_usb[mode];
+		break;
+	default:
+		rtw89_err(rtwdev, "%s hci type error: %d\n", __func__, rtwdev->hci.type);
+		return NULL;
+	}
+
 	if (!cfg)
 		return NULL;
 
@@ -2707,7 +2763,11 @@ static void rtw89_mac_disable_cpu(struct rtw89_dev *rtwdev)
 	clear_bit(RTW89_FLAG_FW_RDY, rtwdev->flags);
 
 	rtw89_write32_clr(rtwdev, R_AX_PLATFORM_ENABLE, B_AX_WCPU_EN);
+	rtw89_write32_clr(rtwdev, R_AX_WCPU_FW_CTRL, B_AX_WCPU_FWDL_EN | B_AX_H2C_PATH_RDY | B_AX_FWDL_PATH_RDY);
 	rtw89_write32_clr(rtwdev, R_AX_SYS_CLK_CTRL, B_AX_CPU_CLK_EN);
+
+	rtw89_write32_clr(rtwdev, R_AX_PLATFORM_ENABLE, B_AX_PLATFORM_EN);
+	rtw89_write32_set(rtwdev, R_AX_PLATFORM_ENABLE, B_AX_PLATFORM_EN);
 }
 
 static int rtw89_mac_enable_cpu(struct rtw89_dev *rtwdev, u8 boot_reason,
@@ -2719,6 +2779,7 @@ static int rtw89_mac_enable_cpu(struct rtw89_dev *rtwdev, u8 boot_reason,
 	if (rtw89_read32(rtwdev, R_AX_PLATFORM_ENABLE) & B_AX_WCPU_EN)
 		return -EFAULT;
 
+	rtw89_write32(rtwdev, R_AX_LDM, 0);
 	rtw89_write32(rtwdev, R_AX_HALT_H2C_CTRL, 0);
 	rtw89_write32(rtwdev, R_AX_HALT_C2H_CTRL, 0);
 
@@ -2816,15 +2877,15 @@ int rtw89_mac_partial_init(struct rtw89_dev *rtwdev)
 
 	rtw89_mac_hci_func_en(rtwdev);
 
+	ret = rtw89_mac_fw_dl_pre_init(rtwdev);
+	if (ret)
+		return ret;
+
 	if (rtwdev->hci.ops->mac_pre_init) {
 		ret = rtwdev->hci.ops->mac_pre_init(rtwdev);
 		if (ret)
 			return ret;
 	}
-
-	ret = rtw89_mac_fw_dl_pre_init(rtwdev);
-	if (ret)
-		return ret;
 
 	rtw89_mac_disable_cpu(rtwdev);
 	ret = rtw89_mac_enable_cpu(rtwdev, 0, true);

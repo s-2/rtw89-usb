@@ -351,6 +351,7 @@ static void rtw_usb_write_port_complete(struct urb *urb)
 
 	skb = (struct sk_buff *)urb->context;
 	dev_kfree_skb_any(skb);
+	pr_info("%s done\n", __func__);
 }
 
 static int rtw_usb_write_port(struct rtw89_dev *rtwdev, u8 addr, u32 cnt,
@@ -369,6 +370,7 @@ static int rtw_usb_write_port(struct rtw89_dev *rtwdev, u8 addr, u32 cnt,
 	if (!urb)
 		return -ENOMEM;
 
+	print_hex_dump(KERN_INFO, "data: ", DUMP_PREFIX_OFFSET, 16, 1, skb->data, cnt, 1);
 	usb_fill_bulk_urb(urb, usbd, pipe, skb->data, (int)cnt,
 			  cb, context);
 	ret = usb_submit_urb(urb, GFP_ATOMIC);
@@ -443,7 +445,10 @@ static int rtw89_usb_tx_write(struct rtw89_dev *rtwdev, struct rtw89_core_tx_req
 	rtw89_core_fill_txdesc(rtwdev, desc_info, txwd_body);
 
 	bulkout_id = chip->ops->get_bulkout_id(rtwdev, txch);
-	pr_info("%s bulkout_id = %d\n", __func__, bulkout_id);
+	ret = rtw_usb_write_port(rtwdev, bulkout_id, skb->len, skb,
+				 rtw_usb_write_port_complete, skb);
+	if (unlikely(ret))
+		rtw89_err(rtwdev, "failed to do USB write, ret=%d\n", ret);
 
 	return 0;
 }
@@ -453,13 +458,14 @@ static int rtw89_usb_ops_mac_pre_init(struct rtw89_dev *rtwdev)
 	/* G6: usb_pre_init_8852a */
 	u32 val;
 
-	rtw89_write32_set(rtwdev, R_AX_PLATFORM_ENABLE, B_AX_R_USBIO_MODE);
+	pr_info("%s NEO enter\n", __func__);
 
+	rtw89_write32_set(rtwdev, R_AX_USB_HOST_REQUEST_2, B_AX_R_USBIO_MODE);
 	rtw89_write32_clr(rtwdev, R_AX_HCI_FUNC_EN, B_AX_HCI_RXDMA_EN | B_AX_HCI_TXDMA_EN);
 	rtw89_write32_set(rtwdev, R_AX_HCI_FUNC_EN, B_AX_HCI_RXDMA_EN | B_AX_HCI_TXDMA_EN);
 
 	val = rtw89_read32(rtwdev, R_AX_USB_ENDPOINT_3);
-	pr_info("%s USB endpoint : TODO : 0x%x\n", __func__, val);
+	pr_info("%s USB endpoint : 0x%x\n", __func__, val);
 
 	return 0;
 }

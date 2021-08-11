@@ -284,6 +284,7 @@ fail:
 static int rtw89_fw_download_hdr(struct rtw89_dev *rtwdev, const u8 *fw, u32 len)
 {
 	u8 val;
+	u32 cnt = FWDL_WAIT_CNT;
 	int ret;
 
 	ret = __rtw89_fw_download_hdr(rtwdev, fw, len);
@@ -292,12 +293,16 @@ static int rtw89_fw_download_hdr(struct rtw89_dev *rtwdev, const u8 *fw, u32 len
 		return ret;
 	}
 
-	ret = read_poll_timeout_atomic(rtw89_read8, val, val & B_AX_FWDL_PATH_RDY,
-				       1, FWDL_WAIT_CNT, false,
-				       rtwdev, R_AX_WCPU_FW_CTRL);
-	if (ret) {
-		rtw89_err(rtwdev, "[ERR]FWDL path ready\n");
-		return ret;
+	while (--cnt) {
+		val = rtw89_read8(rtwdev, R_AX_WCPU_FW_CTRL);
+		val &= B_AX_FWDL_PATH_RDY;
+		if (val)
+			break;
+		udelay(1);
+	}
+	if (!cnt) {
+		rtw89_err(rtwdev, "[ERR]%s poll 0x1E0[2] = 1 failed\n", __func__);
+		return -ETIMEDOUT;
 	}
 
 	rtw89_write32(rtwdev, R_AX_HALT_H2C_CTRL, 0);
@@ -409,6 +414,7 @@ int rtw89_fw_download(struct rtw89_dev *rtwdev, enum rtw89_fw_type type)
 	struct rtw89_fw_bin_info info;
 	const u8 *fw = fw_suit->data;
 	u32 len = fw_suit->size;
+	u32 cnt = FWDL_WAIT_CNT;
 	u8 val;
 	int ret;
 
@@ -423,11 +429,16 @@ int rtw89_fw_download(struct rtw89_dev *rtwdev, enum rtw89_fw_type type)
 		goto fwdl_err;
 	}
 
-	ret = read_poll_timeout_atomic(rtw89_read8, val, val & B_AX_H2C_PATH_RDY,
-				       1, FWDL_WAIT_CNT, false,
-				       rtwdev, R_AX_WCPU_FW_CTRL);
-	if (ret) {
-		rtw89_err(rtwdev, "[ERR]H2C path ready\n");
+	while (--cnt) {
+		val = rtw89_read8(rtwdev, R_AX_WCPU_FW_CTRL);
+		val &= B_AX_H2C_PATH_RDY;
+		if (val)
+			break;
+		udelay(1);
+	}
+	if (!cnt) {
+		rtw89_err(rtwdev, "[ERR]H2C path is NOT ready\n");
+		ret = -EBUSY;
 		goto fwdl_err;
 	}
 

@@ -592,6 +592,7 @@ rtw89_core_tx_update_desc_info(struct rtw89_dev *rtwdev,
 		rtw89_core_tx_update_he_qos_htc(rtwdev, tx_req, pkt_type);
 		break;
 	case RTW89_CORE_TX_TYPE_FWCMD:
+		desc_info->seq = 0;
 		rtw89_core_tx_update_h2c_info(rtwdev, tx_req);
 		break;
 	}
@@ -619,8 +620,7 @@ int rtw89_h2c_tx(struct rtw89_dev *rtwdev,
 
 	rtw89_core_tx_update_desc_info(rtwdev, &tx_req);
 
-	if (!fwdl)
-		rtw89_hex_dump(rtwdev, RTW89_DBG_FW, "H2C: ", skb->data, skb->len);
+	print_hex_dump(KERN_INFO, "H2C: ", DUMP_PREFIX_OFFSET, 16, 1, skb->data, skb->len, 1);
 
 	ret = rtw89_hci_tx_write(rtwdev, &tx_req);
 	if (ret) {

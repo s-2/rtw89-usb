@@ -77,6 +77,7 @@
 
 #define R_AX_PLATFORM_ENABLE 0x0088
 #define B_AX_WCPU_EN BIT(1)
+#define B_AX_PLATFORM_EN BIT(0)
 
 #define R_AX_SCOREBOARD  0x00AC
 #define B_AX_TOGGLE BIT(31)

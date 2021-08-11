@@ -143,6 +143,19 @@ static struct rtw89_dle_mem rtw8852a_dle_mem_pcie[] = {
 			       NULL},
 };
 
+static struct rtw89_dle_mem rtw8852a_dle_mem_usb[] = {
+	[RTW89_QTA_SCC] = {RTW89_QTA_SCC, &wde_size1, &ple_size1, &wde_qt1,
+			    &wde_qt1, &ple_qt25, &ple_qt26},
+	[RTW89_QTA_DBCC] = {RTW89_QTA_DBCC, &wde_size1, &ple_size1, &wde_qt1,
+			    &wde_qt1, &ple_qt16, &ple_qt17},
+	[RTW89_QTA_DLFW] = {RTW89_QTA_DLFW, &wde_size4, &ple_size4,
+			    &wde_qt4, &wde_qt4, &ple_qt13, &ple_qt13},
+	[RTW89_QTA_LAMODE] = {RTW89_QTA_LAMODE, &wde_size15, &ple_size15,
+			      &wde_qt14, &wde_qt14, &ple_qt38, &ple_qt39},
+	[RTW89_QTA_INVALID] = {RTW89_QTA_INVALID, NULL, NULL, NULL, NULL, NULL,
+			       NULL},
+};
+
 /* for USB */
 static struct rtw89_hfc_ch_cfg rtw8852a_hfc_chcfg_usb_scc[] = {
 	{22, 402, grp_0}, /* ACH 0 */
@@ -2171,6 +2184,7 @@ const struct rtw89_chip_info rtw8852a_chip_info = {
 	.hfc_param_ini		= rtw8852a_hfc_param_ini_pcie,
 	.hfc_param_ini_usb	= rtw8852a_hfc_param_ini_usb,
 	.dle_mem		= rtw8852a_dle_mem_pcie,
+	.dle_mem_usb		= rtw8852a_dle_mem_usb,
 	.rf_base_addr		= {0xc000, 0xd000},
 	.pwr_on_seq		= pwr_on_seq_8852a,
 	.pwr_off_seq		= pwr_off_seq_8852a,

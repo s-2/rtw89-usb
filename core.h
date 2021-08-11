@@ -2195,6 +2195,7 @@ struct rtw89_chip_info {
 	struct rtw89_hfc_param_ini *hfc_param_ini;
 	struct rtw89_hfc_param_ini *hfc_param_ini_usb;
 	struct rtw89_dle_mem *dle_mem;
+	struct rtw89_dle_mem *dle_mem_usb;
 	u32 rf_base_addr[2];
 	u8 rf_path_num;
 	u8 tx_nss;
