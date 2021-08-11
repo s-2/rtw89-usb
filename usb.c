@@ -6,8 +6,9 @@
 #include <linux/usb.h>
 #include <linux/mutex.h>
 #include "debug.h"
-#include "fw.h"
 #include "reg.h"
+#include "fw.h"
+#include "txrx.h"
 #include "usb.h"
 
 #define RTW_USB_CONTROL_MSG_TIMEOUT	30000 /* (us) */
@@ -327,6 +328,57 @@ exit:
 	return ret;
 }
 
+static unsigned int rtw_usb_get_pipe(struct rtw89_dev *rtwdev, u8 addr, bool is_bulkout)
+{
+	struct rtw89_usb *rtwusb = rtw_get_usb_priv(rtwdev);
+	struct usb_device *usbd = rtwusb->udev;
+	unsigned int pipe = 0, ep_num = 0;
+
+	if (!is_bulkout) {
+		pipe = usb_rcvbulkpipe(usbd, rtwusb->pipe_in);
+	} else if (addr < RTW89_BULKOUT_NUM) {
+		pipe = usb_sndbulkpipe(usbd, addr);
+	} else {
+		rtw89_err(rtwdev, "failed to get pipe, addr error: %d\n", addr);
+	}
+
+	return pipe;
+}
+
+static void rtw_usb_write_port_complete(struct urb *urb)
+{
+	struct sk_buff *skb;
+
+	skb = (struct sk_buff *)urb->context;
+	dev_kfree_skb_any(skb);
+}
+
+static int rtw_usb_write_port(struct rtw89_dev *rtwdev, u8 addr, u32 cnt,
+			      struct sk_buff *skb,
+			      usb_complete_t cb, void *context)
+{
+	struct rtw89_usb *rtwusb = rtw_get_usb_priv(rtwdev);
+	struct usb_device *usbd = rtwusb->udev;
+	struct urb *urb;
+	unsigned int pipe;
+	bool is_bulkout = true;
+	int ret;
+
+	pipe = rtw_usb_get_pipe(rtwdev, addr, is_bulkout);
+	urb = usb_alloc_urb(0, GFP_ATOMIC);
+	if (!urb)
+		return -ENOMEM;
+
+	usb_fill_bulk_urb(urb, usbd, pipe, skb->data, (int)cnt,
+			  cb, context);
+	ret = usb_submit_urb(urb, GFP_ATOMIC);
+	if (unlikely(ret))
+		rtw89_err(rtwdev, "failed to submit write urb, ret=%d\n", ret);
+	usb_free_urb(urb);
+
+	return ret;
+}
+
 /*
  * driver status relative functions
  */
@@ -370,7 +422,29 @@ static void rtw_usb_rx_queue_purge(struct rtw89_usb *rtwusb)
 static int rtw89_usb_tx_write(struct rtw89_dev *rtwdev, struct rtw89_core_tx_request *tx_req,
 			      u8 txch)
 {
-	pr_info("%s NEO TODO\n", __func__);
+	struct rtw89_usb *rtwusb = rtw_get_usb_priv(rtwdev);
+	const struct rtw89_chip_info *chip = rtwdev->chip;
+	struct rtw89_tx_desc_info *desc_info = &tx_req->desc_info;
+	struct rtw89_txwd_body *txwd_body;
+	struct sk_buff *skb = tx_req->skb;
+	u8 bulkout_id;
+	int ret;
+
+	if ((txch == RTW89_TXCH_CH12 ||
+	     tx_req->tx_type == RTW89_CORE_TX_TYPE_FWCMD) &&
+	    (txch != RTW89_TXCH_CH12 ||
+	     tx_req->tx_type != RTW89_CORE_TX_TYPE_FWCMD)) {
+		rtw89_err(rtwdev, "only fw cmd uses dma channel 12\n");
+		return -EINVAL;
+	}
+
+	txwd_body = (struct rtw89_txwd_body *)skb_push(skb, sizeof(*txwd_body));
+	memset(txwd_body, 0, sizeof(*txwd_body));
+	rtw89_core_fill_txdesc(rtwdev, desc_info, txwd_body);
+
+	bulkout_id = chip->ops->get_bulkout_id(rtwdev, txch);
+	pr_info("%s bulkout_id = %d\n", __func__, bulkout_id);
+
 	return 0;
 }
 
