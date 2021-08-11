@@ -104,7 +104,7 @@ struct rtw89_usb {
 	atomic_t is_bus_drv_ready;
 
 	struct workqueue_struct *txwq;
-	struct sk_buff_head tx_queue[RTW89_DMA_CH_NUM];
+	struct sk_buff_head tx_queue[RTW89_BULKOUT_NUM];
 	struct rtw89_usb_work_data *tx_handler_data;
 
 	struct workqueue_struct *rxwq;

@@ -350,7 +350,7 @@ static void rtw_usb_tx_queue_init(struct rtw89_usb *rtwusb)
 {
 	int i;
 
-	for (i = 0; i < RTW89_DMA_CH_NUM; i++)
+	for (i = 0; i < RTW89_BULKOUT_NUM; i++)
 		skb_queue_head_init(&rtwusb->tx_queue[i]);
 }
 
@@ -358,7 +358,7 @@ static void rtw_usb_tx_queue_purge(struct rtw89_usb *rtwusb)
 {
 	int i;
 
-	for (i = 0; i < RTW89_DMA_CH_NUM; i++)
+	for (i = 0; i < RTW89_BULKOUT_NUM; i++)
 		skb_queue_purge(&rtwusb->tx_queue[i]);
 }
 
@@ -482,7 +482,7 @@ static void rtw_usb_tx_handler(struct work_struct *work)
 	int index;
 
 	/* should use bucket share algorithm for each queue */
-	index = RTW89_DMA_CH_NUM - 1;
+	index = RTW89_BULKOUT_NUM - 1;
 	while (index >= 0) {
 		skb = skb_dequeue(&rtwusb->tx_queue[index]);
 		if (skb) {
@@ -494,7 +494,7 @@ static void rtw_usb_tx_handler(struct work_struct *work)
 		}
 
 		if (index < 0 && !is_empty) {
-			index = RTW89_DMA_CH_NUM - 1;
+			index = RTW89_BULKOUT_NUM - 1;
 			is_empty = true;
 		}
 	}

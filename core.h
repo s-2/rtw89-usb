@@ -2002,6 +2002,9 @@ struct rtw89_chip_ops {
 	s8 (*btc_get_bt_rssi)(struct rtw89_dev *rtwdev, s8 val);
 	void (*btc_bt_aci_imp)(struct rtw89_dev *rtwdev);
 	void (*btc_update_bt_cnt)(struct rtw89_dev *rtwdev);
+
+	/* for USB */
+	u8 (*get_bulkout_id)(struct rtw89_dev *rtwdev, u8 ch_dma);
 };
 
 enum rtw89_dma_ch {
@@ -2019,6 +2022,18 @@ enum rtw89_dma_ch {
 	RTW89_DMA_B1HI = 11,
 	RTW89_DMA_H2C = 12,
 	RTW89_DMA_CH_NUM = 13
+};
+
+/* for USB interface */
+enum rtw89_bulkout_id {
+	RTW89_BULKOUT_ID0 = 0,
+	RTW89_BULKOUT_ID1 = 1,
+	RTW89_BULKOUT_ID2 = 2,
+	RTW89_BULKOUT_ID3 = 3,
+	RTW89_BULKOUT_ID4 = 4,
+	RTW89_BULKOUT_ID5 = 5,
+	RTW89_BULKOUT_ID6 = 6,
+	RTW89_BULKOUT_NUM = 7
 };
 
 enum rtw89_qta_mode {

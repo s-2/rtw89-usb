@@ -2089,6 +2089,43 @@ static void rtw8852a_query_ppdu(struct rtw89_dev *rtwdev,
 	}
 }
 
+
+static u8 rtw8852a_get_bulkout_id(struct rtw89_dev *rtwdev,
+				  u8 ch_dma)
+{
+	u8 bulkout_id = 0;
+
+	switch (ch_dma) {
+	case RTW89_DMA_ACH0:
+		bulkout_id = RTW89_BULKOUT_ID3;
+		break;
+	case RTW89_DMA_ACH2:
+		bulkout_id = RTW89_BULKOUT_ID5;
+		break;
+	case RTW89_DMA_ACH4:
+		bulkout_id = RTW89_BULKOUT_ID4;
+		break;
+	case RTW89_DMA_ACH6:
+		bulkout_id = RTW89_BULKOUT_ID6;
+		break;
+	case RTW89_DMA_B0MG:
+	case RTW89_DMA_B0HI:
+		bulkout_id = RTW89_BULKOUT_ID0;
+		break;
+	case RTW89_DMA_B1MG:
+	case RTW89_DMA_B1HI:
+		bulkout_id = RTW89_BULKOUT_ID1;
+		break;
+	case RTW89_DMA_H2C:
+		bulkout_id = RTW89_BULKOUT_ID2;
+		break;
+	default:
+		bulkout_id = 0xFF;
+	}
+
+	return bulkout_id;
+}
+
 static const struct rtw89_chip_ops rtw8852a_chip_ops = {
 	.bb_reset		= rtw8852a_bb_reset,
 	.bb_sethw		= rtw8852a_bb_sethw,
@@ -2120,6 +2157,8 @@ static const struct rtw89_chip_ops rtw8852a_chip_ops = {
 	.btc_get_bt_rssi	= rtw8852a_btc_get_bt_rssi,
 	.btc_bt_aci_imp		= rtw8852a_btc_bt_aci_imp,
 	.btc_update_bt_cnt	= rtw8852a_btc_update_bt_cnt,
+
+	.get_bulkout_id		= rtw8852a_get_bulkout_id,
 };
 
 const struct rtw89_chip_info rtw8852a_chip_info = {
