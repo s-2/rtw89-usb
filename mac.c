@@ -900,6 +900,7 @@ static int rtw89_mac_pwr_seq(struct rtw89_dev *rtwdev,
 {
 	u32 idx = 0;
 	const struct rtw89_pwr_cfg *cfg;
+	u8 intf_mask;
 	int ret;
 
 	do {
@@ -907,8 +908,20 @@ static int rtw89_mac_pwr_seq(struct rtw89_dev *rtwdev,
 		if (!cfg)
 			break;
 
+		switch (rtwdev->hci.type) {
+		case RTW89_HCI_TYPE_PCIE:
+			intf_mask = PWR_INTF_MSK_PCIE;
+			break;
+		case RTW89_HCI_TYPE_USB:
+			intf_mask = PWR_INTF_MSK_USB;
+			break;
+		default:
+			rtw89_err(rtwdev, "%s hci.type error: %d\n", __func__, rtwdev->hci.type);
+			return -EINVAL;
+		}
+
 		ret = rtw89_mac_sub_pwr_seq(rtwdev, BIT(rtwdev->hal.cv),
-					    PWR_INTF_MSK_PCIE, cfg);
+					    intf_mask, cfg);
 		if (ret)
 			return -EBUSY;
 
