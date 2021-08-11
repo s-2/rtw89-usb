@@ -373,6 +373,7 @@ static int rtw_usb_write_port(struct rtw89_dev *rtwdev, u8 addr, u32 cnt,
 	print_hex_dump(KERN_INFO, "data: ", DUMP_PREFIX_OFFSET, 16, 1, skb->data, cnt, 1);
 	usb_fill_bulk_urb(urb, usbd, pipe, skb->data, (int)cnt,
 			  cb, context);
+	urb->transfer_flags |= URB_ZERO_PACKET;
 	ret = usb_submit_urb(urb, GFP_ATOMIC);
 	if (unlikely(ret))
 		rtw89_err(rtwdev, "failed to submit write urb, ret=%d\n", ret);
