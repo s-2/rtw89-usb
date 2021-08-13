@@ -1343,6 +1343,8 @@ static void rtw8852a_fem_setup(struct rtw89_dev *rtwdev)
 {
 	struct rtw89_efuse *efuse = &rtwdev->efuse;
 
+	pr_info("%s NEO TODO rfe_type: 0x%x\n", __func__, efuse->rfe_type);
+
 	switch (efuse->rfe_type) {
 	case 11:
 	case 12:

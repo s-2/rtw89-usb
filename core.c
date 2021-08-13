@@ -620,8 +620,6 @@ int rtw89_h2c_tx(struct rtw89_dev *rtwdev,
 
 	rtw89_core_tx_update_desc_info(rtwdev, &tx_req);
 
-	print_hex_dump(KERN_INFO, "H2C: ", DUMP_PREFIX_OFFSET, 16, 1, skb->data, skb->len, 1);
-
 	ret = rtw89_hci_tx_write(rtwdev, &tx_req);
 	if (ret) {
 		rtw89_err(rtwdev, "failed to transmit skb to HCI\n");
@@ -2263,11 +2261,9 @@ int rtw89_chip_info_setup(struct rtw89_dev *rtwdev)
 	if (ret)
 		return ret;
 
-#if 0 //NEO
 	ret = rtw89_chip_board_info_setup(rtwdev);
 	if (ret)
 		return ret;
-#endif //NEO
 	return 0;
 }
 EXPORT_SYMBOL(rtw89_chip_info_setup);

@@ -351,7 +351,6 @@ static void rtw_usb_write_port_complete(struct urb *urb)
 
 	skb = (struct sk_buff *)urb->context;
 	dev_kfree_skb_any(skb);
-	pr_info("%s done\n", __func__);
 }
 
 static int rtw_usb_write_port(struct rtw89_dev *rtwdev, u8 addr, u32 cnt,
@@ -370,7 +369,6 @@ static int rtw_usb_write_port(struct rtw89_dev *rtwdev, u8 addr, u32 cnt,
 	if (!urb)
 		return -ENOMEM;
 
-	print_hex_dump(KERN_INFO, "data: ", DUMP_PREFIX_OFFSET, 16, 1, skb->data, cnt, 1);
 	usb_fill_bulk_urb(urb, usbd, pipe, skb->data, (int)cnt,
 			  cb, context);
 	urb->transfer_flags |= URB_ZERO_PACKET;
@@ -487,7 +485,7 @@ static int rtw89_usb_ops_tx_write(struct rtw89_dev *rtwdev, struct rtw89_core_tx
 
 static void rtw89_usb_ops_tx_kick_off(struct rtw89_dev *rtwdev, u8 txch)
 {
-	pr_info("%s NEO TODO\n", __func__);
+	//pr_info("%s NEO TODO\n", __func__);
 }
 
 static struct rtw89_hci_ops rtw89_usb_ops = {
@@ -749,6 +747,12 @@ static int rtw_usb_probe(struct usb_interface *intf,
 		goto err_destroy_rxwq;
 	}
 
+	ret = rtw89_core_register(rtwdev);
+	if (ret) {
+		rtw89_err(rtwdev, "failed to register core\n");
+		goto err_destroy_rxwq;
+	}
+
 	return 0;
 
 err_destroy_rxwq:
@@ -781,6 +785,7 @@ static void rtw_usb_disconnect(struct usb_interface *intf)
 	rtwdev = hw->priv;
 	rtwusb = rtw_get_usb_priv(rtwdev);
 
+	rtw89_core_unregister(rtwdev);
 	rtw_usb_deinit_rx(rtwdev);
 	rtw_usb_deinit_tx(rtwdev);
 
