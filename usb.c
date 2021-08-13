@@ -452,23 +452,6 @@ static int rtw89_usb_tx_write(struct rtw89_dev *rtwdev, struct rtw89_core_tx_req
 	return 0;
 }
 
-static int rtw89_usb_ops_mac_pre_init(struct rtw89_dev *rtwdev)
-{
-	/* G6: usb_pre_init_8852a */
-	u32 val;
-
-	pr_info("%s NEO enter\n", __func__);
-
-	rtw89_write32_set(rtwdev, R_AX_USB_HOST_REQUEST_2, B_AX_R_USBIO_MODE);
-	rtw89_write32_clr(rtwdev, R_AX_HCI_FUNC_EN, B_AX_HCI_RXDMA_EN | B_AX_HCI_TXDMA_EN);
-	rtw89_write32_set(rtwdev, R_AX_HCI_FUNC_EN, B_AX_HCI_RXDMA_EN | B_AX_HCI_TXDMA_EN);
-
-	val = rtw89_read32(rtwdev, R_AX_USB_ENDPOINT_3);
-	pr_info("%s USB endpoint : 0x%x\n", __func__, val);
-
-	return 0;
-}
-
 static int rtw89_usb_ops_tx_write(struct rtw89_dev *rtwdev, struct rtw89_core_tx_request *tx_req)
 {
 	struct rtw89_tx_desc_info *desc_info = &tx_req->desc_info;
@@ -485,7 +468,50 @@ static int rtw89_usb_ops_tx_write(struct rtw89_dev *rtwdev, struct rtw89_core_tx
 
 static void rtw89_usb_ops_tx_kick_off(struct rtw89_dev *rtwdev, u8 txch)
 {
-	//pr_info("%s NEO TODO\n", __func__);
+	pr_info("%s NEO TODO\n", __func__);
+}
+
+static void rtw89_usb_ops_flush_queues(struct rtw89_dev *rtwdev, u32 queues, bool drop)
+{
+	pr_info("%s NEO TODO\n", __func__);
+}
+
+static void rtw89_usb_ops_reset(struct rtw89_dev *rtwdev)
+{
+	pr_info("%s NEO TODO\n", __func__);
+}
+
+static int rtw89_usb_ops_start(struct rtw89_dev *rtwdev)
+{
+	pr_info("%s NEO TODO\n", __func__);
+	return 0;
+}
+
+static void rtw89_usb_ops_stop(struct rtw89_dev *rtwdev)
+{
+	pr_info("%s NEO TODO\n", __func__);
+}
+
+static void rtw89_usb_link_ps(struct rtw89_dev *rtwdev, bool enter)
+{
+	pr_info("%s NEO TODO\n", __func__);
+}
+
+static int rtw89_usb_ops_mac_pre_init(struct rtw89_dev *rtwdev)
+{
+	/* G6: usb_pre_init_8852a */
+	u32 val;
+
+	pr_info("%s NEO enter\n", __func__);
+
+	rtw89_write32_set(rtwdev, R_AX_USB_HOST_REQUEST_2, B_AX_R_USBIO_MODE);
+	rtw89_write32_clr(rtwdev, R_AX_HCI_FUNC_EN, B_AX_HCI_RXDMA_EN | B_AX_HCI_TXDMA_EN);
+	rtw89_write32_set(rtwdev, R_AX_HCI_FUNC_EN, B_AX_HCI_RXDMA_EN | B_AX_HCI_TXDMA_EN);
+
+	val = rtw89_read32(rtwdev, R_AX_USB_ENDPOINT_3);
+	pr_info("%s USB endpoint : 0x%x\n", __func__, val);
+
+	return 0;
 }
 
 #define USB2_BULKSIZE	0x1
@@ -541,9 +567,43 @@ static int rtw89_usb_ops_mac_post_init(struct rtw89_dev *rtwdev)
 	return ret;
 }
 
+static int rtw89_usb_ops_deinit(struct rtw89_dev *rtwdev)
+{
+	pr_info("%s NEO TODO\n", __func__);
+	return 0;
+}
+
+static u32 rtw89_usb_check_and_reclaim_tx_resource(struct rtw89_dev *rtwdev, u8 txch)
+{
+	pr_info("%s NEO TODO\n", __func__);
+	return 0;
+}
+
+static int rtw89_usb_ops_mac_lv1_recovery(struct rtw89_dev *rtwdev,
+					  enum rtw89_lv1_rcvy_step step)
+{
+	pr_info("%s NEO TODO\n", __func__);
+	return 0;
+}
+
+static void rtw89_usb_ops_dump_err_status(struct rtw89_dev *rtwdev)
+{
+	pr_info("%s NEO TODO\n", __func__);
+}
+
+static int rtw89_usb_napi_poll(struct napi_struct *napi, int budget)
+{
+	pr_info("%s NEO TODO\n", __func__);
+	return 0;
+}
+
 static struct rtw89_hci_ops rtw89_usb_ops = {
 	.tx_write = rtw89_usb_ops_tx_write,
 	.tx_kick_off = rtw89_usb_ops_tx_kick_off,
+	.flush_queues = rtw89_usb_ops_flush_queues,
+	.reset = rtw89_usb_ops_reset,
+	.start = rtw89_usb_ops_start,
+	.stop = rtw89_usb_ops_stop,
 
 	.read8 = rtw_usb_read8_atomic,
 	.read16 = rtw_usb_read16_atomic,
@@ -554,6 +614,12 @@ static struct rtw89_hci_ops rtw89_usb_ops = {
 
 	.mac_pre_init = rtw89_usb_ops_mac_pre_init,
 	.mac_post_init = rtw89_usb_ops_mac_post_init,
+	.deinit = rtw89_usb_ops_deinit,
+
+	.check_and_reclaim_tx_resource = rtw89_usb_check_and_reclaim_tx_resource,
+	.mac_lv1_rcvy = rtw89_usb_ops_mac_lv1_recovery,
+	.dump_err_status = rtw89_usb_ops_dump_err_status,
+	.napi_poll = rtw89_usb_napi_poll,
 };
 
 static void rtw_usb_rx_handler(struct work_struct *work)
