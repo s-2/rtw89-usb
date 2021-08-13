@@ -488,6 +488,59 @@ static void rtw89_usb_ops_tx_kick_off(struct rtw89_dev *rtwdev, u8 txch)
 	//pr_info("%s NEO TODO\n", __func__);
 }
 
+#define USB2_BULKSIZE	0x1
+#define NUMP 0x1
+#define EP5 0x5
+#define EP6 0x6
+#define EP7 0x7
+#define EP8 0x8
+#define EP9 0x9
+#define EP10 0xA
+#define EP11 0xB
+#define EP12 0xC
+static int rtw89_usb_ops_mac_post_init(struct rtw89_dev *rtwdev)
+{
+	u32 val32;
+	u8 val8;
+	int ret = 0;
+
+	val32 = rtw89_read32(rtwdev, R_AX_USB3_MAC_NPI_CONFIG_INTF_0);
+	val32 &= ~B_AX_SSPHY_LFPS_FILTER;
+	rtw89_write32(rtwdev, R_AX_USB3_MAC_NPI_CONFIG_INTF_0, val32);
+
+	rtw89_write8(rtwdev, R_AX_RXDMA_SETTING, USB2_BULKSIZE);
+
+	rtw89_write8_clr(rtwdev, R_AX_USB_ENDPOINT_0, 0xf);
+	rtw89_write8_set(rtwdev, R_AX_USB_ENDPOINT_0, EP5);
+	rtw89_write8(rtwdev, R_AX_USB_ENDPOINT_2 +1, NUMP);
+
+	rtw89_write8_clr(rtwdev, R_AX_USB_ENDPOINT_0, 0xf);
+	rtw89_write8_set(rtwdev, R_AX_USB_ENDPOINT_0, EP6);
+	rtw89_write8(rtwdev, R_AX_USB_ENDPOINT_2 +1, NUMP);
+
+	rtw89_write8_clr(rtwdev, R_AX_USB_ENDPOINT_0, 0xf);
+	rtw89_write8_set(rtwdev, R_AX_USB_ENDPOINT_0, EP7);
+	rtw89_write8(rtwdev, R_AX_USB_ENDPOINT_2 +1, NUMP);
+
+	rtw89_write8_clr(rtwdev, R_AX_USB_ENDPOINT_0, 0xf);
+	rtw89_write8_set(rtwdev, R_AX_USB_ENDPOINT_0, EP9);
+	rtw89_write8(rtwdev, R_AX_USB_ENDPOINT_2 +1, NUMP);
+
+	rtw89_write8_clr(rtwdev, R_AX_USB_ENDPOINT_0, 0xf);
+	rtw89_write8_set(rtwdev, R_AX_USB_ENDPOINT_0, EP10);
+	rtw89_write8(rtwdev, R_AX_USB_ENDPOINT_2 +1, NUMP);
+
+	rtw89_write8_clr(rtwdev, R_AX_USB_ENDPOINT_0, 0xf);
+	rtw89_write8_set(rtwdev, R_AX_USB_ENDPOINT_0, EP11);
+	rtw89_write8(rtwdev, R_AX_USB_ENDPOINT_2 +1, NUMP);
+
+	rtw89_write8_clr(rtwdev, R_AX_USB_ENDPOINT_0, 0xf);
+	rtw89_write8_set(rtwdev, R_AX_USB_ENDPOINT_0, EP12);
+	rtw89_write8(rtwdev, R_AX_USB_ENDPOINT_2 +1, NUMP);
+
+	return ret;
+}
+
 static struct rtw89_hci_ops rtw89_usb_ops = {
 	.tx_write = rtw89_usb_ops_tx_write,
 	.tx_kick_off = rtw89_usb_ops_tx_kick_off,
@@ -500,6 +553,7 @@ static struct rtw89_hci_ops rtw89_usb_ops = {
 	.write32 = rtw_usb_write32_atomic,
 
 	.mac_pre_init = rtw89_usb_ops_mac_pre_init,
+	.mac_post_init = rtw89_usb_ops_mac_post_init,
 };
 
 static void rtw_usb_rx_handler(struct work_struct *work)
