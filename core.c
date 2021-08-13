@@ -2085,7 +2085,7 @@ int rtw89_core_start(struct rtw89_dev *rtwdev)
 	rtw89_phy_init_bb_reg(rtwdev);
 	rtw89_phy_init_rf_reg(rtwdev);
 
-	rtw89_btc_ntfy_init(rtwdev, BTC_MODE_NORMAL);
+	rtw89_btc_ntfy_init(rtwdev, BTC_MODE_WL);
 
 	rtw89_phy_dm_init(rtwdev);
 
