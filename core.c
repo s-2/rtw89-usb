@@ -2064,18 +2064,24 @@ static void rtw89_core_ppdu_sts_init(struct rtw89_dev *rtwdev)
 		rtwdev->ppdu_sts.curr_rx_ppdu_cnt[i] = U8_MAX;
 }
 
+/* G6: hal_start_8852a */
 int rtw89_core_start(struct rtw89_dev *rtwdev)
 {
 	int ret;
 
+	pr_info("%s start\n", __func__);
+
 	rtwdev->mac.qta_mode = RTW89_QTA_SCC;
+
+	/* G6: mac_hal_init() */
 	ret = rtw89_mac_init(rtwdev);
 	if (ret) {
 		rtw89_err(rtwdev, "mac init fail, ret:%d\n", ret);
 		return ret;
 	}
 
-	rtw89_btc_ntfy_poweron(rtwdev);
+
+	//rtw89_btc_ntfy_poweron(rtwdev);
 
 	/* efuse process */
 
@@ -2085,12 +2091,13 @@ int rtw89_core_start(struct rtw89_dev *rtwdev)
 	rtw89_phy_init_bb_reg(rtwdev);
 	rtw89_phy_init_rf_reg(rtwdev);
 
-	rtw89_btc_ntfy_init(rtwdev, BTC_MODE_WL);
+	//rtw89_btc_ntfy_init(rtwdev, BTC_MODE_WL);
 
 	rtw89_phy_dm_init(rtwdev);
 
 	rtw89_mac_cfg_ppdu_status(rtwdev, RTW89_MAC_0, true);
 	rtw89_mac_update_rts_threshold(rtwdev, RTW89_MAC_0);
+
 
 	ret = rtw89_hci_start(rtwdev);
 	if (ret) {
@@ -2103,9 +2110,10 @@ int rtw89_core_start(struct rtw89_dev *rtwdev)
 
 	set_bit(RTW89_FLAG_RUNNING, rtwdev->flags);
 
-	rtw89_btc_ntfy_radio_state(rtwdev, BTC_RFCTRL_WL_ON);
+	//rtw89_btc_ntfy_radio_state(rtwdev, BTC_RFCTRL_WL_ON);
 	rtw89_fw_h2c_fw_log(rtwdev, rtwdev->fw.fw_log_enable);
 
+	pr_info("%s finished \n", __func__);
 	return 0;
 }
 

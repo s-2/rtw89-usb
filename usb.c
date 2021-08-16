@@ -26,6 +26,9 @@ struct rtw89_usb_ctrlcb_t {
 	int status;
 };
 
+static void rtw_usb_read_port(struct rtw89_dev *rtwdev, u8 addr,
+			      struct rx_usb_ctrl_block *rxcb);
+
 /*
  * usb read/write register functions
  */
@@ -444,12 +447,159 @@ static int rtw89_usb_tx_write(struct rtw89_dev *rtwdev, struct rtw89_core_tx_req
 	rtw89_core_fill_txdesc(rtwdev, desc_info, txwd_body);
 
 	bulkout_id = chip->ops->get_bulkout_id(rtwdev, txch);
-	ret = rtw_usb_write_port(rtwdev, bulkout_id, skb->len, skb,
-				 rtw_usb_write_port_complete, skb);
-	if (unlikely(ret))
-		rtw89_err(rtwdev, "failed to do USB write, ret=%d\n", ret);
+	if (txch == RTW89_TXCH_CH12 ||
+	    tx_req->tx_type == RTW89_CORE_TX_TYPE_FWCMD) {
+		ret = rtw_usb_write_port(rtwdev, bulkout_id, skb->len, skb,
+					 rtw_usb_write_port_complete, skb);
+
+		if (unlikely(ret))
+			rtw89_err(rtwdev, "failed to do USB write, ret=%d\n", ret);
+	} else {
+		skb_queue_tail(&rtwusb->tx_queue[bulkout_id], skb);
+	}
 
 	return 0;
+}
+
+static void rtw_usb_read_port_complete(struct urb *urb)
+{
+	struct rx_usb_ctrl_block *rxcb = urb->context;
+	struct rtw89_dev *rtwdev = (struct rtw89_dev *)rxcb->data;
+	struct rtw89_usb *rtwusb = (struct rtw89_usb *)rtwdev->priv;
+	struct sk_buff *skb = rxcb->rx_skb;
+
+	rxcb->rx_urb = NULL;
+
+	if (urb->status == 0) {
+		if (urb->actual_length >= RTW_USB_MAX_RECVBUF_SZ ||
+		    urb->actual_length < 24) {
+			rtw89_err(rtwdev, "failed to get urb length: %d\n",
+				  urb->actual_length);
+			if (skb)
+				dev_kfree_skb_any(skb);
+		} else {
+			print_hex_dump(KERN_INFO, "read_port: ", DUMP_PREFIX_OFFSET, 16, 1,
+				       skb->data, skb->len, 1);
+#if 0 //NEO
+			skb_queue_tail(&rtwusb->rx_queue, skb);
+			queue_work(rtwusb->rxwq,
+				   &rtwusb->rx_handler_data->work);
+#endif //NEO
+		}
+
+		rtw_usb_read_port(rtwdev, RTW_USB_BULK_IN_ADDR, rxcb);
+	} else {
+		switch (urb->status) {
+		case -EINVAL:
+		case -EPIPE:
+		case -ENODEV:
+		case -ESHUTDOWN:
+		case -ENOENT:
+		     /* USB HW may not be available, e.g. unplugged */
+		     rtw_usb_set_bus_ready(rtwdev, false);
+		     break;
+		case -EPROTO:
+		case -EILSEQ:
+		case -ETIME:
+		case -ECOMM:
+		case -EOVERFLOW:
+		     rtw89_err(rtwdev, "failed to read at USB, SW\n");
+		     break;
+		case -EINPROGRESS:
+		     rtw89_err(rtwdev, "failed to read at USB, in process\n");
+		     break;
+		default:
+		     rtw89_err(rtwdev, "failed to read at USB, unknown: %d\n",
+			       urb->status);
+		     break;
+		}
+		if (skb)
+		     dev_kfree_skb_any(skb);
+	}
+}
+
+static void rtw_usb_read_port(struct rtw89_dev *rtwdev, u8 addr,
+			      struct rx_usb_ctrl_block *rxcb)
+{
+	struct urb *urb = NULL;
+	struct rtw89_usb *rtwusb = rtw_get_usb_priv(rtwdev);
+	struct usb_device *usbd = rtwusb->udev;
+	struct sk_buff *skb;
+	unsigned int pipe;
+	size_t alignment;
+	bool is_bulkout = false;
+	u32 len;
+	int ret;
+
+	urb = usb_alloc_urb(0, GFP_ATOMIC);
+	if (!urb)
+		return;
+
+	rxcb->data = (void *)rtwdev;
+	pipe = rtw_usb_get_pipe(rtwdev, addr, is_bulkout);
+	len = RTW_USB_MAX_RECVBUF_SZ + RTW_USB_RECVBUFF_ALIGN_SZ;
+	skb = dev_alloc_skb(len);
+	if (!skb) {
+		usb_free_urb(urb);
+		return;
+	}
+
+	alignment = (size_t)skb->data & (RTW_USB_RECVBUFF_ALIGN_SZ - 1);
+	skb_reserve(skb, RTW_USB_RECVBUFF_ALIGN_SZ - alignment);
+	urb->transfer_buffer = skb->data;
+	rxcb->rx_urb = urb;
+	rxcb->rx_skb = skb;
+	usb_fill_bulk_urb(urb, usbd, pipe,
+			  urb->transfer_buffer,
+			  RTW_USB_MAX_RECVBUF_SZ,
+			  rtw_usb_read_port_complete,
+			  rxcb);
+	ret = usb_submit_urb(urb, GFP_ATOMIC);
+	if (ret)
+		rtw89_err(rtwdev, "failed to submit USB urb, ret=%d\n", ret);
+
+	usb_free_urb(urb);
+}
+
+static void rtw_usb_inirp_init(struct rtw89_dev *rtwdev)
+{
+	struct rtw89_usb *rtwusb = rtw_get_usb_priv(rtwdev);
+	struct rx_usb_ctrl_block *rxcb;
+	int i;
+
+	if (rtw_usb_is_bus_ready(rtwdev)) {
+		rtw89_err(rtwdev, "fail to do USB inirp init, bus is set\n");
+		return;
+	}
+
+	for (i = 0; i < RTW_USB_RXCB_NUM; i++) {
+		rxcb = &rtwusb->rx_cb[i];
+		rxcb->rx_urb = NULL;
+	}
+
+	for (i = 0; i < RTW_USB_RXCB_NUM; i++) {
+		rxcb = &rtwusb->rx_cb[i];
+		rtw_usb_read_port(rtwdev, RTW_USB_BULK_IN_ADDR, rxcb);
+	}
+
+	rtw_usb_set_bus_ready(rtwdev, true);
+}
+
+static void rtw_usb_inirp_deinit(struct rtw89_dev *rtwdev)
+{
+	struct rtw89_usb *rtwusb = rtw_get_usb_priv(rtwdev);
+	struct rx_usb_ctrl_block *rxcb;
+	int i;
+
+	rtw_usb_set_bus_ready(rtwdev, false);
+
+	for (i = 0; i < RTW_USB_RXCB_NUM; i++) {
+		rxcb = &rtwusb->rx_cb[i];
+		if (rxcb->rx_urb) {
+			usb_kill_urb(rxcb->rx_urb);
+			usb_free_urb(rxcb->rx_urb);
+		}
+	}
 }
 
 static int rtw89_usb_ops_tx_write(struct rtw89_dev *rtwdev, struct rtw89_core_tx_request *tx_req)
@@ -468,7 +618,7 @@ static int rtw89_usb_ops_tx_write(struct rtw89_dev *rtwdev, struct rtw89_core_tx
 
 static void rtw89_usb_ops_tx_kick_off(struct rtw89_dev *rtwdev, u8 txch)
 {
-	pr_info("%s NEO TODO\n", __func__);
+	//pr_info("%s NEO TODO\n", __func__);
 }
 
 static void rtw89_usb_ops_flush_queues(struct rtw89_dev *rtwdev, u32 queues, bool drop)
@@ -483,13 +633,13 @@ static void rtw89_usb_ops_reset(struct rtw89_dev *rtwdev)
 
 static int rtw89_usb_ops_start(struct rtw89_dev *rtwdev)
 {
-	pr_info("%s NEO TODO\n", __func__);
+	rtw_usb_inirp_init(rtwdev);
 	return 0;
 }
 
 static void rtw89_usb_ops_stop(struct rtw89_dev *rtwdev)
 {
-	pr_info("%s NEO TODO\n", __func__);
+	rtw_usb_inirp_deinit(rtwdev);
 }
 
 static void rtw89_usb_link_ps(struct rtw89_dev *rtwdev, bool enter)
@@ -685,8 +835,9 @@ static void rtw_usb_tx_handler(struct work_struct *work)
 	while (index >= 0) {
 		skb = skb_dequeue(&rtwusb->tx_queue[index]);
 		if (skb) {
-			pr_info("%s skb:%p\n", __func__, skb);
-			//rtw_usb_tx_agg(rtwusb, skb);
+			print_hex_dump(KERN_INFO, "tx: ", DUMP_PREFIX_OFFSET, 16, 1,
+				       skb->data, skb->len, 1);
+
 			is_empty = false;
 		} else {
 			index--;

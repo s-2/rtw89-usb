@@ -2909,6 +2909,7 @@ int rtw89_mac_partial_init(struct rtw89_dev *rtwdev)
 	return 0;
 }
 
+/* G6: mac_hal_init() */
 int rtw89_mac_init(struct rtw89_dev *rtwdev)
 {
 	int ret;
