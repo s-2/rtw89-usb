@@ -338,6 +338,7 @@ static unsigned int rtw_usb_get_pipe(struct rtw89_dev *rtwdev, u8 addr, bool is_
 	unsigned int pipe = 0, ep_num = 0;
 
 	if (!is_bulkout) {
+		pr_info("%s pipe_in : 0x%x\n", __func__, rtwusb->pipe_in);
 		pipe = usb_rcvbulkpipe(usbd, rtwusb->pipe_in);
 	} else if (addr < RTW89_BULKOUT_NUM) {
 		pipe = usb_sndbulkpipe(usbd, rtwusb->out_ep[addr]);
@@ -537,15 +538,13 @@ static void rtw_usb_read_port(struct rtw89_dev *rtwdev, u8 addr,
 
 	rxcb->data = (void *)rtwdev;
 	pipe = rtw_usb_get_pipe(rtwdev, addr, is_bulkout);
-	len = RTW_USB_MAX_RECVBUF_SZ + RTW_USB_RECVBUFF_ALIGN_SZ;
+	len = RTW_USB_MAX_RECVBUF_SZ;
 	skb = dev_alloc_skb(len);
 	if (!skb) {
 		usb_free_urb(urb);
 		return;
 	}
 
-	alignment = (size_t)skb->data & (RTW_USB_RECVBUFF_ALIGN_SZ - 1);
-	skb_reserve(skb, RTW_USB_RECVBUFF_ALIGN_SZ - alignment);
 	urb->transfer_buffer = skb->data;
 	rxcb->rx_urb = urb;
 	rxcb->rx_skb = skb;
@@ -633,12 +632,14 @@ static void rtw89_usb_ops_reset(struct rtw89_dev *rtwdev)
 
 static int rtw89_usb_ops_start(struct rtw89_dev *rtwdev)
 {
+	pr_info("%s \n", __func__);
 	rtw_usb_inirp_init(rtwdev);
 	return 0;
 }
 
 static void rtw89_usb_ops_stop(struct rtw89_dev *rtwdev)
 {
+	pr_info("%s \n", __func__);
 	rtw_usb_inirp_deinit(rtwdev);
 }
 
